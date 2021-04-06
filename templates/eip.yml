@@ -1,0 +1,61 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Open Distro for Elasticsearch bootstrap seed node EIP.
+Parameters:
+  ParentVPCStack:
+    Description: Name of an active CloudFormation stack that contains the networking
+      resources.
+    Type: String
+  SecurityStackName:
+    Description: Name of an active CloudFormation stack that contains the security
+      resources.
+    Type: String
+Resources:
+  SeedIPAddress:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  AssociateEIPSeed:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - SeedIPAddress
+        - AllocationId
+      NetworkInterfaceId:
+        Ref: SeedNetworkInterface
+  SeedNetworkInterface:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: Seed Node ENI
+      # Ipv6AddressCount: 1
+      PrivateIpAddress: {'Fn::ImportValue': !Sub '${ParentVPCStack}-SeedEipPrivateIpAddress'}
+      GroupSet:
+      - Fn::ImportValue:
+          Fn::Sub: "${SecurityStackName}-NodesSecurityGroup"
+      SubnetId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetAPublic'}
+      Tags:
+      - Key: Name
+        Value: 
+          Fn::Join:
+          - ''
+          - - Fn::ImportValue:
+                Fn::Sub: "${ParentVPCStack}-EnvTag"
+            - "-seed-eni"
+
+Outputs:
+  StackName:
+    Description: This is the stack name.
+    Value: !Sub '${AWS::StackName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-StackName'
+  SeedNetworkInterface:
+    Description: This is the VPC CIDR Block.
+    Value: !Ref SeedNetworkInterface
+    Export:
+      Name: !Sub '${AWS::StackName}-SeedNetworkInterface'
+  PrimaryPrivateIpAddress:
+    Description: This is the Primary PrivateIpAddress.
+    Value: !GetAtt 'SeedNetworkInterface.PrimaryPrivateIpAddress'
+    Export:
+      Name: !Sub '${AWS::StackName}-SeedEipPrivateIpAddress'

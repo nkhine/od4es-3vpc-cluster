@@ -1,0 +1,83 @@
+
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Security: Self-hosted ES access security group.'
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+    - Label:
+        default: 'Parent Stacks'
+      Parameters:
+      - ParentVPCStack
+      - EnvironmentTag
+      - ClassB
+Parameters:
+  ParentVPCStack:
+    Description: 'Stack name of parent VPC stack based on vpc/vpc-*azs.yaml template.'
+    Type: String
+  EnvironmentTag:
+    Description: 'EnvironmentTag.'
+    Type: String
+    Default: 'Development'
+  # CIDRPrefix:
+  #   Description: Enter Class B CIDR Prefix (e.g. 192.168, 10.1, 172.16)
+  #   Type: String
+  #   # AllowedPattern: "(192\\.168)|10\\.[0-9][0-9]{0,1}|(172\\.([1][6-9]|[2][0-9]|[3][0-1]))"
+  #   # ConstraintDescription: must be a valid Private Subnet CIDR Prefix between 192.168
+  #   #   or 10.{0-99} or 172.16
+  ClassB:
+    Description: 'Class B of VPC (10.XXX.0.0/16)'
+    Type: Number
+    Default: 0
+    ConstraintDescription: 'Must be in the range [0-255]'
+    MinValue: 0
+    MaxValue: 255
+Resources:
+  NodesSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Rules for allowing access to ES nodes
+      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '9300'
+        ToPort: '9300'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '9200'
+        ToPort: '9200'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '5601'
+        ToPort: '5601'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '9600'
+        ToPort: '9600'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: {'Fn::ImportValue': !Sub '${ParentVPCStack}-CidrBlock'}
+
+Outputs:
+  TemplateID:
+    Description: 'template id.'
+    Value: 'security/groups/es.yml'
+  TemplateVersion:
+    Description: 'template version.'
+    Value: '__VERSION__'
+  StackName:
+    Description: 'Stack name.'
+    Value: !Sub '${AWS::StackName}'
+  NodesSecurityGroup:
+    Description: The security group for master and data nodes
+    Value:
+      Ref: NodesSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-NodesSecurityGroup'
+

@@ -208,3 +208,7 @@ ip           heap.percent ram.percent cpu load_1m load_5m load_15m node.role mas
 ```
 profile=profile STAGE=prod REGION=region APP=app make delete
 ```
+
+### References
+
+* https://github.com/widdix/aws-cf-templates

@@ -23,6 +23,9 @@ Parameters:
     Type: 'AWS::EC2::KeyPair::KeyName'
     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances
     Default: 'eu-west-2'
+  Email:
+    Type: String
+    Default: 'norman@khine.net'
   MasterInstanceType:
     Description: The EC2 instance type for the master nodes in the cluster
     Type: String
@@ -151,6 +154,12 @@ Parameters:
     Default: '3'
 
 Resources:
+  Alert:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Email: !Ref Email
+      TemplateURL: templates/operations/alert.yaml
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -158,7 +167,27 @@ Resources:
         VPCName: 'ELASTICSEARCH'
         ClassB: !Ref ClassB
         EnvironmentTag: !Ref Environment
-      TemplateURL: templates/vpc-3azs.yml
+      TemplateURL: templates/vpc/vpc-3azs.yaml
+  S3GatewayEndpoint:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        ParentVPCStack: !GetAtt VPC.Outputs.StackName
+      TemplateURL: templates/vpc/vpc-endpoint-s3.yaml
+  KMS:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        ParentAlertStack: !GetAtt Alert.Outputs.StackName
+      TemplateURL: templates/security/kms-key.yaml
+  ElbAccessLogWriteS3:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        ParentKmsKeyStack: !GetAtt KMS.Outputs.StackName
+        ParentVpcEndpointStack: !GetAtt S3GatewayEndpoint.Outputs.StackName
+        Access: ElbAccessLogWrite
+      TemplateURL: templates/state/s3.yaml
   SecurityStackName:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -166,11 +195,11 @@ Resources:
         ParentVPCStack: !GetAtt VPC.Outputs.StackName
         EnvironmentTag: !Ref Environment
         ClassB: !Ref ClassB
-      TemplateURL: templates/security/groups/es.yml
+      TemplateURL: templates/security/groups/es.yaml
   SeedInterfaceStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: templates/eip.yml
+      TemplateURL: templates/eip.yaml
       Parameters:
         ParentVPCStack: !GetAtt VPC.Outputs.StackName
         SecurityStackName: !GetAtt SecurityStackName.Outputs.StackName
@@ -178,7 +207,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: SeedInterfaceStack
     Properties:
-      TemplateURL: templates/nodes/seed.yml
+      TemplateURL: templates/nodes/seed.yaml
       Parameters:
         ParentVPCStack: !GetAtt VPC.Outputs.StackName
         SeedInterfaceStack: !GetAtt SeedInterfaceStack.Outputs.StackName
@@ -189,7 +218,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: SeedStack
     Properties:
-      TemplateURL: templates/nodes/master.yml
+      TemplateURL: templates/nodes/master.yaml
       Parameters:
         ParentVPCStack: !GetAtt VPC.Outputs.StackName
         SecurityStackName: !GetAtt SecurityStackName.Outputs.StackName
@@ -202,7 +231,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: SeedStack
     Properties:
-      TemplateURL: templates/nodes/client.yml
+      TemplateURL: templates/nodes/client.yaml
       Parameters:
         ParentVPCStack: !GetAtt VPC.Outputs.StackName
         SecurityStackName: !GetAtt SecurityStackName.Outputs.StackName
@@ -215,7 +244,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: SeedStack
     Properties:
-      TemplateURL: templates/nodes/data.yml
+      TemplateURL: templates/nodes/data.yaml
       Parameters:
         ParentVPCStack: !GetAtt VPC.Outputs.StackName
         SecurityStackName: !GetAtt SecurityStackName.Outputs.StackName

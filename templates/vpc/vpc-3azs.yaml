@@ -275,16 +275,16 @@ Outputs:
     Value: !Join [',', [!Ref SubnetAPrivate, !Ref SubnetBPrivate, !Ref SubnetCPrivate]]
     Export:
       Name: !Sub '${AWS::StackName}-VPCPrivateZoneIdentifier'
-  RouteTablePublic:
+  RouteTablesPublic:
     Description: 'Route table public.'
     Value: !Ref PublicRoutingTable
     Export:
-      Name: !Sub '${AWS::StackName}-RouteTablePublic'
-  RouteTablePrivate:
+      Name: !Sub '${AWS::StackName}-RouteTablesPublic'
+  RouteTablesPrivate:
     Description: 'Route table A private.'
     Value: !Ref PrivateRoutingTable
     Export:
-      Name: !Sub '${AWS::StackName}-RouteTablePrivate'
+      Name: !Sub '${AWS::StackName}-RouteTablesPrivate'
   SubnetAPublic:
     Description: 'Subnet A public.'
     Value: !Ref SubnetAPublic

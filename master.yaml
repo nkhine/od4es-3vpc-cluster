@@ -153,6 +153,16 @@ Parameters:
     AllowedPattern: "^(\\d{1,2})"
     Default: '3'
 
+Mappings:
+  SSLmapping:
+    ssl1:
+      Ireland:  'arn:aws:acm:eu-west-1::***'
+      London:   'arn:aws:acm:eu-west-2:***'
+  AWSRegionsNameMapping:
+    eu-west-1:
+      RegionName: Ireland
+    eu-west-2:
+      RegionName: London
 Resources:
   Alert:
     Type: AWS::CloudFormation::Stack
@@ -174,17 +184,14 @@ Resources:
       Parameters:
         ParentVPCStack: !GetAtt VPC.Outputs.StackName
       TemplateURL: templates/vpc/vpc-endpoint-s3.yaml
-  KMS:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      Parameters:
+  KMS:s3:PutObject
         ParentAlertStack: !GetAtt Alert.Outputs.StackName
       TemplateURL: templates/security/kms-key.yaml
   ElbAccessLogWriteS3:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        ParentKmsKeyStack: !GetAtt KMS.Outputs.StackName
+        # ParentKmsKeyStack: !GetAtt KMS.Outputs.StackName
         ParentVpcEndpointStack: !GetAtt S3GatewayEndpoint.Outputs.StackName
         Access: ElbAccessLogWrite
       TemplateURL: templates/state/s3.yaml
@@ -234,11 +241,19 @@ Resources:
       TemplateURL: templates/nodes/client.yaml
       Parameters:
         ParentVPCStack: !GetAtt VPC.Outputs.StackName
+        ParentS3StackAccessLog: !GetAtt ElbAccessLogWriteS3.Outputs.StackName
         SecurityStackName: !GetAtt SecurityStackName.Outputs.StackName
         KeyName: !Ref KeyName
         InstanceType: !Ref ClientInstanceType
         NodeCount: !Ref ClientNodeCount
         VolumeSize: 25
+        CertificateArn: !FindInMap
+          - SSLmapping
+          - ssl1
+          - !FindInMap
+            - AWSRegionsNameMapping
+            - !Ref 'AWS::Region'
+            - RegionName
 
   DataNodes:
     Type: AWS::CloudFormation::Stack

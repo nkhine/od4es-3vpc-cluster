@@ -10,13 +10,13 @@ TAGS		:= Name=${APP} Account=$(ACCOUNT) 'Cost centre'=Operations Project=ODFE Se
 
 build:
 	@echo "${GREEN}✓ building cloudformation resources... ${NC}\n"
-	aws cloudformation package --template-file master.yml --s3-bucket ${BUCKET} --s3-prefix production/${APP}/${REGION}/${STAGE} --output-template-file master.pack.yml --profile $(profile)
+	aws cloudformation package --template-file master.yaml --s3-bucket ${BUCKET} --s3-prefix production/${APP}/${REGION}/${STAGE} --output-template-file master.pack.yaml --profile $(profile)
 	@echo "${GREEN}✓ builds completed, test template... ${NC}\n"
-	aws cloudformation deploy --template-file master.pack.yml --stack-name ${APP}-${STAGE} --capabilities CAPABILITY_NAMED_IAM --no-execute-changeset --region ${REGION} --profile $(profile)
+	aws cloudformation deploy --template-file master.pack.yaml --stack-name ${APP}-${STAGE} --capabilities CAPABILITY_NAMED_IAM --no-execute-changeset --region ${REGION} --profile $(profile)
 
 deploy: build
 	@echo "${GREEN}✓ Deploying stack ${NC}\n"
-	aws cloudformation deploy --template-file master.pack.yml --stack-name ${APP}-${STAGE} --capabilities CAPABILITY_NAMED_IAM --region ${REGION} --profile $(profile) --tags $(TAGS)
+	aws cloudformation deploy --template-file master.pack.yaml --stack-name ${APP}-${STAGE} --capabilities CAPABILITY_NAMED_IAM --region ${REGION} --profile $(profile) --tags $(TAGS)
 
 describe:
 	@echo "${GREEN}✓ Describe the stack ${NC}\n"
